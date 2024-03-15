@@ -27,9 +27,9 @@ function player_movement () {
     if (controller.right.isPressed()) {
         orange.vx += speed
     } else if (controller.left.isPressed()) {
-        orange.vx -= speed
+        orange.vx += speed * -1
     }
-    orange.vx *= deceleration
+    orange.vx = orange.vx * deceleration
 }
 sprites.onOverlap(SpriteKind.Player, SpriteKind.Enemy, function (orange, red) {
     orange_stance = sprites.readDataNumber(orange, "stance")
@@ -112,9 +112,10 @@ let red_images: Image[] = []
 let orange_animations: Image[][] = []
 let orange_images: Image[] = []
 let max_enemy_speed = 0
+let deceleration = 0
 let speed = 0
 speed = 8
-let deceleration = 0.95
+deceleration = 0.95
 max_enemy_speed = -75
 orange_images = [assets.image`orange low`, assets.image`orange mid`, assets.image`orange high`]
 orange_animations = [assets.animation`orange attack low`, assets.animation`orange attack mid`, assets.animation`orange attack high`]
