@@ -5,6 +5,29 @@ controller.up.onEvent(ControllerButtonEvent.Pressed, function () {
         orange.setImage(orange_images[new_player_stance])
     }
 })
+controller.B.onEvent(ControllerButtonEvent.Pressed, function () {
+    timer.throttle("throw dagger", 2000, function () {
+        dagger = sprites.create(image.create(16, 16), SpriteKind.Projectile)
+        dagger.left = orange.x
+        dagger.vx = -20
+        animation.runImageAnimation(
+        dagger,
+        assets.animation`throwing dagger`,
+        50,
+        true
+        )
+    })
+})
+function dagger_hit (duelist: Sprite, dagger: Sprite) {
+    if (sprites.readDataBoolean(duelist, "attacking")) {
+        duelist.vx = duelist.vx * -1.25
+    } else if (duelist.kind() == SpriteKind.Enemy) {
+        sprites.destroy(duelist)
+        sprites.destroy(dagger)
+    } else {
+        game.gameOver(false)
+    }
+}
 scene.onOverlapTile(SpriteKind.Player, assets.tile`end`, function (orange, location) {
     game.over(true)
 })
@@ -44,6 +67,9 @@ sprites.onOverlap(SpriteKind.Player, SpriteKind.Enemy, function (orange, red) {
         game.over(false)
     }
 })
+sprites.onOverlap(SpriteKind.Enemy, SpriteKind.Projectile, function (sprite, otherSprite) {
+    dagger_hit(sprite, otherSprite)
+})
 function randomise_enemy_stance (enemy: Sprite) {
     current_stance = sprites.readDataNumber(enemy, "stance")
     if (!(current_stance == 1)) {
@@ -54,6 +80,9 @@ function randomise_enemy_stance (enemy: Sprite) {
     enemy.setImage(red_images[current_stance])
     sprites.setDataNumber(enemy, "stance", current_stance)
 }
+sprites.onOverlap(SpriteKind.Player, SpriteKind.Projectile, function (sprite, otherSprite) {
+    dagger_hit(sprite, otherSprite)
+})
 controller.down.onEvent(ControllerButtonEvent.Pressed, function () {
     new_player_stance = sprites.readDataNumber(orange, "stance") - 1
     if (new_player_stance > -1) {
@@ -76,6 +105,9 @@ function enemy_attack (enemy: Sprite) {
         sprites.setDataBoolean(enemy, "attacking", false)
     })
 }
+scene.onHitWall(SpriteKind.Projectile, function (sprite, location) {
+    sprites.destroy(sprite)
+})
 function player_attack () {
     sprites.setDataBoolean(orange, "attacking", true)
     stance = sprites.readDataNumber(orange, "stance")
@@ -105,6 +137,7 @@ let stance = 0
 let current_stance = 0
 let red_stance = 0
 let orange_stance = 0
+let dagger: Sprite = null
 let new_player_stance = 0
 let orange: Sprite = null
 let red_animations: Image[][] = []
