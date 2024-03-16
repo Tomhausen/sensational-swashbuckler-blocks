@@ -10,7 +10,9 @@
         "animation": "*",
         "arcade-sprite-util": "github:jwunderl/arcade-sprite-util#v0.4.1",
         "pxt-status-bar": "github:jwunderl/pxt-status-bar#v0.4.2",
-        "Tiles Advanced": "github:Tomhausen/The-Code-Zone-Tiles-Advanced#v0.5.6"
+        "Tiles Advanced": "github:Tomhausen/The-Code-Zone-Tiles-Advanced#v0.5.6",
+        "arcade-background-scroll": "github:microsoft/arcade-background-scroll#6cfbf925b9a4d5ddf3e1078e6cf6ca6a1aebb301",
+        "pxt-button-combos": "github:jwunderl/pxt-button-combos#v0.0.24"
     },
     "files": [
         "main.blocks",

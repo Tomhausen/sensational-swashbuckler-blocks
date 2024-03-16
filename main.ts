@@ -6,17 +6,7 @@ controller.up.onEvent(ControllerButtonEvent.Pressed, function () {
     }
 })
 controller.B.onEvent(ControllerButtonEvent.Pressed, function () {
-    timer.throttle("throw dagger", 2000, function () {
-        dagger = sprites.create(image.create(16, 16), SpriteKind.Projectile)
-        dagger.left = orange.x
-        dagger.vx = -20
-        animation.runImageAnimation(
-        dagger,
-        assets.animation`throwing dagger`,
-        50,
-        true
-        )
-    })
+    throw_dagger()
 })
 function dagger_hit (duelist: Sprite, dagger: Sprite) {
     if (sprites.readDataBoolean(duelist, "attacking")) {
@@ -62,6 +52,7 @@ sprites.onOverlap(SpriteKind.Player, SpriteKind.Enemy, function (orange, red) {
         red.vx += 25
         scene.cameraShake(2, 100)
     } else if (sprites.readDataBoolean(orange, "attacking")) {
+        drop_dagger(red)
         red.destroy()
     } else {
         game.over(false)
@@ -70,6 +61,12 @@ sprites.onOverlap(SpriteKind.Player, SpriteKind.Enemy, function (orange, red) {
 sprites.onOverlap(SpriteKind.Enemy, SpriteKind.Projectile, function (sprite, otherSprite) {
     dagger_hit(sprite, otherSprite)
 })
+function setup_stances () {
+    orange_images = [assets.image`orange low`, assets.image`orange mid`, assets.image`orange high`]
+    orange_animations = [assets.animation`orange attack low`, assets.animation`orange attack mid`, assets.animation`orange attack high`]
+    red_images = [assets.image`red low`, assets.image`red mid`, assets.image`red high`]
+    red_animations = [assets.animation`red attack low`, assets.animation`red attack mid`, assets.animation`red attack high`]
+}
 function randomise_enemy_stance (enemy: Sprite) {
     current_stance = sprites.readDataNumber(enemy, "stance")
     if (!(current_stance == 1)) {
@@ -83,6 +80,23 @@ function randomise_enemy_stance (enemy: Sprite) {
 sprites.onOverlap(SpriteKind.Player, SpriteKind.Projectile, function (sprite, otherSprite) {
     dagger_hit(sprite, otherSprite)
 })
+function throw_dagger () {
+    if (dagger_count < 1) {
+        return
+    }
+    timer.throttle("throw dagger", 2000, function () {
+        dagger = sprites.create(image.create(16, 16), SpriteKind.Projectile)
+        dagger.left = orange.x
+        dagger.vx = -20
+        animation.runImageAnimation(
+        dagger,
+        assets.animation`throwing dagger`,
+        50,
+        true
+        )
+        dagger_count += -1
+    })
+}
 controller.down.onEvent(ControllerButtonEvent.Pressed, function () {
     new_player_stance = sprites.readDataNumber(orange, "stance") - 1
     if (new_player_stance > -1) {
@@ -90,6 +104,18 @@ controller.down.onEvent(ControllerButtonEvent.Pressed, function () {
         orange.setImage(orange_images[new_player_stance])
     }
 })
+controller.combos.attachCombo("ll", function () {
+    timer.throttle("dash", 2000, function () {
+        orange.vx = -200
+    })
+})
+function drop_dagger (red: Sprite) {
+    if (randint(1, 4) == 1) {
+        dagger_pickup = sprites.create(assets.image`dagger pickup`, SpriteKind.Food)
+        dagger_pickup.x = red.x
+        dagger_pickup.bottom = red.bottom
+    }
+}
 function enemy_attack (enemy: Sprite) {
     sprites.setDataBoolean(enemy, "attacking", true)
     stance = sprites.readDataNumber(enemy, "stance")
@@ -105,6 +131,11 @@ function enemy_attack (enemy: Sprite) {
         sprites.setDataBoolean(enemy, "attacking", false)
     })
 }
+sprites.onOverlap(SpriteKind.Player, SpriteKind.Food, function (sprite, otherSprite) {
+    dagger_count += 1
+    music.play(music.melodyPlayable(music.baDing), music.PlaybackMode.InBackground)
+    sprites.destroy(otherSprite)
+})
 scene.onHitWall(SpriteKind.Projectile, function (sprite, location) {
     sprites.destroy(sprite)
 })
@@ -132,35 +163,36 @@ function player_behaviour () {
         player_attack()
     }
 }
-let enemy: Sprite = null
+let enemy_sprite: Sprite = null
 let stance = 0
-let current_stance = 0
-let red_stance = 0
-let orange_stance = 0
+let dagger_pickup: Sprite = null
 let dagger: Sprite = null
-let new_player_stance = 0
-let orange: Sprite = null
+let current_stance = 0
 let red_animations: Image[][] = []
 let red_images: Image[] = []
 let orange_animations: Image[][] = []
+let red_stance = 0
+let orange_stance = 0
 let orange_images: Image[] = []
+let new_player_stance = 0
+let orange: Sprite = null
 let max_enemy_speed = 0
 let deceleration = 0
 let speed = 0
+let dagger_count = 0
+dagger_count = 0
 speed = 8
 deceleration = 0.95
 max_enemy_speed = -75
-orange_images = [assets.image`orange low`, assets.image`orange mid`, assets.image`orange high`]
-orange_animations = [assets.animation`orange attack low`, assets.animation`orange attack mid`, assets.animation`orange attack high`]
-red_images = [assets.image`red low`, assets.image`red mid`, assets.image`red high`]
-red_animations = [assets.animation`red attack low`, assets.animation`red attack mid`, assets.animation`red attack high`]
 orange = sprites.create(assets.image`orange low`, SpriteKind.Player)
+setup_stances()
 sprites.setDataNumber(orange, "stance", 0)
 sprites.setDataBoolean(orange, "attacking", false)
 tiles.setCurrentTilemap(tilemap`level`)
 tiles.placeOnRandomTile(orange, assets.tile`orange spawn`)
 scene.cameraFollowSprite(orange)
-scene.setBackgroundColor(9)
+scene.setBackgroundImage(assets.image`background`)
+scroller.scrollBackgroundWithCamera(scroller.CameraScrollMode.OnlyHorizontal)
 game.onUpdate(function () {
     for (let value of sprites.allOfKind(SpriteKind.Enemy)) {
         enemy_behaviour(value)
@@ -169,8 +201,8 @@ game.onUpdate(function () {
 })
 game.onUpdateInterval(1500, function () {
     if (sprites.allOfKind(SpriteKind.Enemy).length < 3) {
-        enemy = sprites.create(assets.image`red low`, SpriteKind.Enemy)
-        sprites.setDataNumber(enemy, "stance", 0)
-        enemy.setPosition(orange.x + 110, orange.y)
+        enemy_sprite = sprites.create(assets.image`red low`, SpriteKind.Enemy)
+        sprites.setDataNumber(enemy_sprite, "stance", 0)
+        enemy_sprite.setPosition(orange.x + 110, orange.y)
     }
 })
