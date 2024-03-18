@@ -85,10 +85,9 @@ function throw_dagger () {
         return
     }
     timer.throttle("throw dagger", 2000, function () {
-        dagger = sprites.create(image.create(16, 16), SpriteKind.Projectile)
+        dagger = sprites.createProjectileFromSprite(image.create(16, 16), orange, 150, 0)
         dagger.left = orange.x
-        dagger.y = orange.y
-        dagger.vx = 150
+        orange.vx = -20
         animation.runImageAnimation(
         dagger,
         assets.animation`throwing dagger`,
