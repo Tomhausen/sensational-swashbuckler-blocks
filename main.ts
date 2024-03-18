@@ -10,7 +10,7 @@ controller.B.onEvent(ControllerButtonEvent.Pressed, function () {
 })
 function dagger_hit (duelist: Sprite, dagger: Sprite) {
     if (sprites.readDataBoolean(duelist, "attacking")) {
-        duelist.vx = duelist.vx * -1.25
+        dagger.vx = dagger.vx * -1.25
     } else if (duelist.kind() == SpriteKind.Enemy) {
         sprites.destroy(duelist)
         sprites.destroy(dagger)
@@ -87,7 +87,8 @@ function throw_dagger () {
     timer.throttle("throw dagger", 2000, function () {
         dagger = sprites.create(image.create(16, 16), SpriteKind.Projectile)
         dagger.left = orange.x
-        dagger.vx = -20
+        dagger.y = orange.y
+        dagger.vx = 150
         animation.runImageAnimation(
         dagger,
         assets.animation`throwing dagger`,
