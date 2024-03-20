@@ -58,6 +58,16 @@ sprites.onOverlap(SpriteKind.Player, SpriteKind.Enemy, function (orange, red) {
         game.over(false)
     }
 })
+function reset_player (player2: Sprite) {
+    stance = sprites.readDataNumber(player2, "stance")
+    player2.setImage(orange_images[stance])
+    sprites.setDataBoolean(player2, "attacking", false)
+}
+function reset_enemy (enemy: Sprite) {
+    stance = sprites.readDataNumber(enemy, "stance")
+    enemy.setImage(red_images[stance])
+    sprites.setDataBoolean(enemy, "attacking", false)
+}
 sprites.onOverlap(SpriteKind.Enemy, SpriteKind.Projectile, function (sprite, otherSprite) {
     dagger_hit(sprite, otherSprite)
 })
@@ -126,9 +136,7 @@ function enemy_attack (enemy: Sprite) {
     false
     )
     timer.after(400, function () {
-        stance = sprites.readDataNumber(enemy, "stance")
-        enemy.setImage(red_images[stance])
-        sprites.setDataBoolean(enemy, "attacking", false)
+        reset_enemy(enemy)
     })
 }
 sprites.onOverlap(SpriteKind.Player, SpriteKind.Food, function (sprite, otherSprite) {
@@ -149,9 +157,7 @@ function player_attack () {
     false
     )
     timer.after(400, function () {
-        stance = sprites.readDataNumber(orange, "stance")
-        orange.setImage(orange_images[stance])
-        sprites.setDataBoolean(orange, "attacking", false)
+        reset_player(orange)
     })
 }
 function player_behaviour () {
@@ -164,13 +170,13 @@ function player_behaviour () {
     }
 }
 let enemy_sprite: Sprite = null
-let stance = 0
 let dagger_pickup: Sprite = null
 let dagger: Sprite = null
 let current_stance = 0
 let red_animations: Image[][] = []
-let red_images: Image[] = []
 let orange_animations: Image[][] = []
+let red_images: Image[] = []
+let stance = 0
 let red_stance = 0
 let orange_stance = 0
 let orange_images: Image[] = []
