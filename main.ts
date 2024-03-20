@@ -21,6 +21,20 @@ function dagger_hit (duelist: Sprite, dagger: Sprite) {
 scene.onOverlapTile(SpriteKind.Player, assets.tile`end`, function (orange, location) {
     game.over(true)
 })
+controller.player2.onButtonEvent(ControllerButton.A, ControllerButtonEvent.Pressed, function () {
+    timer.debounce("parry", 3000, function () {
+        sprites.setDataBoolean(orange, "parrying", true)
+        animation.runImageAnimation(
+        orange,
+        assets.animation`orange parry`,
+        40,
+        false
+        )
+        timer.after(3000, function () {
+            reset_player(orange)
+        })
+    })
+})
 function enemy_behaviour (enemy: Sprite) {
     if (!(sprites.readDataBoolean(enemy, "stunned"))) {
         if (enemy.vx > max_enemy_speed) {
@@ -54,19 +68,24 @@ sprites.onOverlap(SpriteKind.Player, SpriteKind.Enemy, function (orange, red) {
     } else if (sprites.readDataBoolean(orange, "attacking")) {
         drop_dagger(red)
         red.destroy()
-    } else {
-        game.over(false)
+    } else if (sprites.readDataBoolean(orange, "parrying") && !(sprites.readDataBoolean(red, "stunned"))) {
+        stun(red)
+    } else if (!(sprites.readDataBoolean(red, "stunned"))) {
+        info.changeLifeBy(-1)
+        tiles.placeOnRandomTile(orange, assets.tile`end`)
     }
 })
 function reset_player (player2: Sprite) {
     stance = sprites.readDataNumber(player2, "stance")
     player2.setImage(orange_images[stance])
     sprites.setDataBoolean(player2, "attacking", false)
+    sprites.setDataBoolean(player2, "parrying", false)
 }
 function reset_enemy (enemy: Sprite) {
     stance = sprites.readDataNumber(enemy, "stance")
     enemy.setImage(red_images[stance])
     sprites.setDataBoolean(enemy, "attacking", false)
+    sprites.setDataBoolean(enemy, "stunned", false)
 }
 sprites.onOverlap(SpriteKind.Enemy, SpriteKind.Projectile, function (sprite, otherSprite) {
     dagger_hit(sprite, otherSprite)
@@ -105,6 +124,14 @@ function throw_dagger () {
         true
         )
         dagger_count += -1
+    })
+}
+function stun (enemy: Sprite) {
+    sprites.setDataBoolean(enemy, "stunned", true)
+    enemy.vx = 20
+    enemy.sayText("!", 3000, false)
+    timer.after(3000, function () {
+        reset_enemy(enemy)
     })
 }
 controller.down.onEvent(ControllerButtonEvent.Pressed, function () {
@@ -162,6 +189,9 @@ function player_attack () {
 }
 function player_behaviour () {
     player_movement()
+    if (sprites.readDataBoolean(orange, "parrying")) {
+        return
+    }
     if (sprites.readDataBoolean(orange, "attacking")) {
         return
     }
@@ -169,7 +199,18 @@ function player_behaviour () {
         player_attack()
     }
 }
+function setup_progress_bar () {
+    progress_bar = statusbars.create(130, 11, StatusBarKind.Energy)
+    progress_bar.max = (tilesAdvanced.getTilemapWidth() - 2) * 16
+    progress_bar.right = 160
+    progress_bar.top = 0
+    progress_bar.setColor(4, 11)
+}
+let row = 0
+let col = 0
 let enemy_sprite: Sprite = null
+let next_location: tiles.Location = null
+let progress_bar: StatusBarSprite = null
 let dagger_pickup: Sprite = null
 let dagger: Sprite = null
 let current_stance = 0
@@ -190,6 +231,7 @@ dagger_count = 0
 speed = 8
 deceleration = 0.95
 max_enemy_speed = -75
+let floor_index = -1
 orange = sprites.create(assets.image`orange low`, SpriteKind.Player)
 setup_stances()
 sprites.setDataNumber(orange, "stance", 0)
@@ -199,16 +241,33 @@ tiles.placeOnRandomTile(orange, assets.tile`orange spawn`)
 scene.cameraFollowSprite(orange)
 scene.setBackgroundImage(assets.image`background`)
 scroller.scrollBackgroundWithCamera(scroller.CameraScrollMode.OnlyHorizontal)
+info.setLife(3)
+setup_progress_bar()
 game.onUpdate(function () {
     for (let value of sprites.allOfKind(SpriteKind.Enemy)) {
         enemy_behaviour(value)
     }
     player_behaviour()
+    progress_bar.value = orange.x
+})
+game.onUpdateInterval(5000, function () {
+    next_location = tiles.getTileLocation(floor_index, tilesAdvanced.getTilemapHeight() - 1)
+    tiles.setTileAt(next_location, assets.tile`transparency16`)
+    tiles.setWallAt(next_location, false)
+    music.play(music.melodyPlayable(music.knock), music.PlaybackMode.UntilDone)
+    floor_index += 1
 })
 game.onUpdateInterval(1500, function () {
     if (sprites.allOfKind(SpriteKind.Enemy).length < 3) {
         enemy_sprite = sprites.create(assets.image`red low`, SpriteKind.Enemy)
         sprites.setDataNumber(enemy_sprite, "stance", 0)
         enemy_sprite.setPosition(orange.x + 110, orange.y)
+    }
+})
+game.onUpdateInterval(100, function () {
+    col = Math.round((orange.left - 5) / 16)
+    row = orange.tilemapLocation().row + 1
+    if (!(tiles.tileAtLocationIsWall(tiles.getTileLocation(col, row)))) {
+        game.gameOver(false)
     }
 })
