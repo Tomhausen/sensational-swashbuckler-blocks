@@ -21,20 +21,6 @@ function dagger_hit (duelist: Sprite, dagger: Sprite) {
 scene.onOverlapTile(SpriteKind.Player, assets.tile`end`, function (orange, location) {
     game.over(true)
 })
-controller.player2.onButtonEvent(ControllerButton.A, ControllerButtonEvent.Pressed, function () {
-    timer.debounce("parry", 3000, function () {
-        sprites.setDataBoolean(orange, "parrying", true)
-        animation.runImageAnimation(
-        orange,
-        assets.animation`orange parry`,
-        40,
-        false
-        )
-        timer.after(3000, function () {
-            reset_player(orange)
-        })
-    })
-})
 function enemy_behaviour (enemy: Sprite) {
     if (!(sprites.readDataBoolean(enemy, "stunned"))) {
         if (enemy.vx > max_enemy_speed) {
@@ -87,6 +73,20 @@ function reset_enemy (enemy: Sprite) {
     sprites.setDataBoolean(enemy, "attacking", false)
     sprites.setDataBoolean(enemy, "stunned", false)
 }
+controller.combos.attachCombo("a+b", function () {
+    timer.debounce("parry", 3000, function () {
+        sprites.setDataBoolean(orange, "parrying", true)
+        animation.runImageAnimation(
+        orange,
+        assets.animation`orange parry`,
+        40,
+        false
+        )
+        timer.after(3000, function () {
+            reset_player(orange)
+        })
+    })
+})
 sprites.onOverlap(SpriteKind.Enemy, SpriteKind.Projectile, function (sprite, otherSprite) {
     dagger_hit(sprite, otherSprite)
 })
